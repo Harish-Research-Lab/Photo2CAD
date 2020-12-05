@@ -1,5 +1,5 @@
 import cv2
-from Shape import node
+from .shape import node
 import copy
 
 #To rearrange the parts in the views, like for front store all the parts such that the center of the shape is arranged in descending order of x pixel value

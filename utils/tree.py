@@ -1,4 +1,4 @@
-from Shape import node
+from .shape import node
 import sys
 
 def writetofile(filename,string):
