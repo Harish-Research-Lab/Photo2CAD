@@ -1,9 +1,11 @@
 class node:
-    t = 0
-    ro = 0
+    t = 0 #Translation has happened or not
+    ro = 0 #Rotation has happened or not
+    #Translation values
     tx=0
     ty=0
     tz=0
+    #Rotation values
     rx=0
     ry=0
     rz=0
@@ -22,7 +24,7 @@ class node:
         self.fn = fn
         self.fa = fa
         self.fs = fs
-        self.r = r
+        self.r = r  #Radius
         self.r1 = r1
         self.center = center
 

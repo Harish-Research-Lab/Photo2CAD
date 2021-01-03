@@ -1,6 +1,12 @@
 import cv2
 from .shape import node
-import copy
+import math
+
+#Round up
+def round_up(n, decimals=2):
+    multiplier = 10 ** decimals
+    n = math.ceil(n * multiplier) / multiplier
+    return n
 
 #To rearrange the parts in the views, like for front store all the parts such that the center of the shape is arranged in descending order of x pixel value
 #otherwise do ascending order in side and top
@@ -48,11 +54,11 @@ def add_part(objects,part,pos,type,ratio):
 
     #Translate based on the centers of the given shape with largest shape
     if(type == "front"):
-        part[0].translate((part[1][0]-pos[0]) * ratio , 0 , (pos[1]-part[1][1]) * ratio )
+        part[0].translate(round_up((part[1][0]-pos[0]) * ratio) , 0 , round_up((pos[1]-part[1][1]) * ratio ))
     if(type == "side"):
-        part[0].translate(0 , (part[1][0]-pos[0]) * ratio  , (pos[1]-part[1][1]) * ratio )
+        part[0].translate(0 , round_up((part[1][0]-pos[0]) * ratio)  , round_up((pos[1]-part[1][1]) * ratio ))
     if(type == "top"):
-        part[0].translate(-(pos[1]-part[1][1]) * ratio , (part[1][0]-pos[0]) * ratio , 0 )
+        part[0].translate(round_up((part[1][1]-pos[1]) * ratio) , round_up((part[1][0]-pos[0]) * ratio) , 0 )
 
     #Search for the parent shape and place it inside that parent list
     for i,object in enumerate(objects):
@@ -112,7 +118,6 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
                 for l,part_s in enumerate(side):
                     # ADD inner parts of side view only visible from side view and making sure the same shape is not added again once the shape is available in side view
                     if(add_rest == 1 and part_s[3]!=-1): 
-                        found = 1
                         #Increasing the size of parts list
                         part_s.append("used")
                         part_s[3]=-1
@@ -127,8 +132,8 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
                         front.append(part_s)
 
                         continue
-                    #check whether the height iin front view is same in top view
-                    if(abs(part_f[3]-part_s[3]) < roundOffApprox):
+                    #check whether the height in front view is same in side view
+                    if(abs(part_f[3]-part_s[3]) < roundOffApprox and found==0):
                         #If the shape is found in side view     
                         found = 1
                         #If its a parent in front view
@@ -150,10 +155,13 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
                                         # the height in top view with width in front view
                                         if(abs(part_t[3] - part_f[4]) < roundOffApprox and len(part_t)==5):
                                            
-                                            #If the shape in top view is child it must be protuding from it's parent to be visible in front view, so 
+                                            #If the shape in top view is child it must be protruding from it's parent to be visible in front view, so 
                                             # we change the operation of the shape of the top view to union operation 
                                             if(m!=0):
                                                 part_t[0].operation = "union"
+                                            #If it is a parent make the operation None
+                                            if(j==0):  
+                                                part_t[0].operation = "None"
                                             #If its a circle from top view replace the front view in "front_part" list with top view shape, while giving it a height
                                             #  and z-translate
                                             if(part_t[0].shape == "cylinder"):
@@ -162,18 +170,18 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
                                                 part_t[0].tz = part_f[0].tz
                                                 #Get to know the position of which parent we are adding in "front_part" so that the remaining shapes
                                                 # in the top view after this shape can be added later into the "front_part" list 
-                                                part_t[1] = j
+                                                part_t[1] = i
                                                 #Marking that the shape in the top view is used
                                                 part_t[2] = -1
                                                 part_t.append("used")
-                                                #Replace the shape in the front view by the shape obtained from top view
+                                                #Replace the shape in the front view by the shape obtained from top view                                             
                                                 part_f[0] = part_t[0]
                                                 #Mark that the side view is used
                                                 part_s[3] = -1
                                                 #Giving signal to add rest of the child in side view after the current shape
                                                 add_rest = 1
                                                 break
-                                            if(part_t[0].shape == "cube" and part_s[0].ry == 0 and part_f[0].ry == 0 and part_t[0].rz != 0 and part_t[0].rz != 90):
+                                            if(part_t[0].shape == "cube" and part_s[0].ry == 0 and part_f[0].ry == 0 and part_t[0].rz != 0 and abs(part_t[0].rz) != 90):
                                                 #For the top view, cube will be rotated along x-axis so we need to provide them breadth rather
                                                 #  than height 
                                                 part_t[0].b = part_f[0].h
@@ -181,13 +189,13 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
                                                 part_t[0].tz = part_f[0].tz
                                                 #Get to know the position of which parent we are adding in "front_part" so that the remaining shapes
                                                 # in the top view after this shape can be added later into the "front_part" list 
-                                                part_t[1] = j
+                                                part_t[1] = i
                                                 #Marking that the shape in the top view is used
                                                 part_t[2] = -1
                                                 part_t.append("used")
                                                 #Replace the shape in the front view by the shape obtained from top view
                                                 part_f[0] = part_t[0]
-                                                #ginving the thickness of the shape, helpful when the parent is rotated along z axis
+                                                #giving the thickness of the shape, helpful when the parent is rotated along z axis
                                                 part_f[3] =part_t[3]
                                                 #Mark that the side view is used
                                                 part_s[3] = -1
@@ -198,6 +206,7 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
                                         #Using for else construct, which helps here to continue to traverse through the list until the shape is found in top view 
                                         # or it exists from the top_part loop 
                                         continue
+                                    #Reaches here if counterpart for the front shape is in top view
                                     break
                             #If the shape was found in top view and we if we replaced with top view, then skip rest of the work below it
                             if(part_s[3] == -1):
@@ -208,11 +217,18 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
                                 #Get height of the cylinder
                                 part_s[0].h = part_f[0].l
                                 #Get x-translation
-                                part_s[0].tx = part_t[0].tx
+                                part_s[0].tx = part_f[0].tx
                                 #If the cube is front view cube is rotated along y axis
-                                part_s[0].ry = part_t[0].ry
+                                part_s[0].ry = part_f[0].ry
                                 #Replace front view by side
+                                
+                                if(j==0):  #If it is a parent make the operation None
+                                    part_s[0].operation = "None"
+                                    
                                 part_f[0] = part_s[0]
+                                part_s[3] = -1
+                                add_rest = 1
+                                continue
                             
                             #If the side view is cube
                             if(part_s[0].shape == "cube"):
@@ -243,7 +259,7 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
                                 # in 90 about z-axis) and also give the y-translation
                                 part_f[0].h = part_s[0].l
                                 part_f[0].ty = part_s[0].ty
-                                #If the cube is rotated along x axis, by x axis rotation in side view is given by zy as we are rotating the side view 
+                                #If the cube is rotated along x axis, by x axis rotation in side view is given by y axis as we are rotating the side view 
                                 # by 90 along z axis
                                 part_f[0].rx = part_s[0].ry 
 
@@ -253,7 +269,7 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
                         add_rest = 1
                         continue
                 #If the shape in front view is already found, dont check any other shapes in the next parent child list
-                if(add_rest==1):
+                if(found==1):
                     break
 
             #If the corresponding shape of the front view is not found in side view check in top view to get the thickness of the shape
@@ -261,18 +277,22 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
                 #Search top view, here we are assuming 
                 for top in top_parts:
                     for m,part_t in enumerate(top):
-                        #Checking whether the heigth of top view is same as width in front view and the top view shape should not be used before
+                        
+                        #Checking whether the height of top view is same as width in front view and the top view shape should not be used before
                         if((abs(part_t[3]-part_f[4]) < roundOffApprox) and len(part_t)==5):
+                            #Experimental :- Check if the front shape is child, and x translation is too far - neglect same height in top and width in front which are of different shape
+                            if(abs(part_f[0].tx - part_t[0].tx) > 0.5):
+                                continue
                             #Checking whether the front view is a parent or not
                             if(j == 0):
                                 first = 1
-                            #If the shape in top view is child it must be protuding from it's parent to be visible in front view, so 
+                            #If the shape in top view is child it must be protruding from it's parent to be visible in front view, so 
                             # we change the operation of the shape of the top view to union operation 
                             if(m!=0):
                                 part_t[0].operation = "union"
                             #If it's a cylinder provide height and y-translation
                             if(part_f[0].shape == "cylinder"):
-                                #This checking is not required as it is obivous, but still doing anyway
+                                #This checking is not required as it is obvious, but still doing anyway
                                 if(part_t[0].shape == "cube"):
                                     part_f[0].h = part_t[0].h
                                     part_f[0].ty = part_t[0].ty
@@ -284,7 +304,7 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
                                     part_t[0].tz = part_f[0].tz
                                     #Get to know the position of which parent we are adding in "front_part" so that the remaining shapes
                                     # in the top view after this shape can be added later into the "front_part" list 
-                                    part_t[1] = j
+                                    part_t[1] = i
                                     #Marking that the shape in the top view is used
                                     part_t[2] = -1
                                     part_t.append("used")
@@ -324,8 +344,12 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
         #If the parent is not used, get the thickness from top view, we are not checking front view because all the shapes visible in front view 
         # are already considered         
         if(side[0][3]!=-1):
+            addCompleteList = []
             for part_s in side:
-                #Looping through topo view
+                #Looping through top view
+                if(part_s[3] == -1):
+                    break
+
                 for k,top in enumerate(top_parts):
                     for l,part_t in enumerate(top):
                         #Check whether their width are same in both side and top view and top view should not be used already
@@ -335,7 +359,7 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
                                 #Giving z-translation
                                 part_t[0].tz = part_s[0].tz
                                 if(part_t[0].shape == "cube"):
-                                    #Giving thivkness to top view shape
+                                    #Giving thickness to top view shape
                                     part_t[0].b = part_s[0].h
                                     #Check whether the cube is rotated along z axis( in top view)
                                     if(part_t[0].rz != 0):
@@ -359,7 +383,7 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
                                 part_t.append("used")
                             #If its a cylinder get its height
                             if(part_s[0].shape=="cylinder"):
-                                #This checking is not required as it is obivous, but still doing anyway
+                                #This checking is not required as it is obvious, but still doing anyway
                                 if(part_t[0].shape == "cube"):
                                     #Get height
                                     part_s[0].h = part_t[0].h
@@ -377,8 +401,9 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
                                     #Marking that the shape in the top view is used
                                     part_t[2] = -1
                                     part_t.append("used")
+                addCompleteList.append(part_s)
             #Append whole parent-child list into "front_parts"
-            front_parts.append(side)
+            front_parts.append(addCompleteList)
 
     #Add shapes only visible in top
     for top in top_parts:
@@ -419,7 +444,7 @@ def combining(front_parts,side_parts,top_parts,roundOffApprox):
                     elif (part_t[0].shape == "cube"):
                         height = part_t[0].b
             except TypeError:
-                print("")
+                pass
 
     return front_parts
 
@@ -429,7 +454,7 @@ def detect(c):
     shape = "unidentified"
     peri = cv2.arcLength(c, True)
     #Finding the number of line segment required to make the polygon
-    approx = cv2.approxPolyDP(c, 0.015 * peri, True)
+    approx = cv2.approxPolyDP(c, 0.02 * peri, True)
     #Cylinder type in openscad for making regular prism
     cylinder_type = 0
 
@@ -447,7 +472,7 @@ def detect(c):
         ar = rect[1][0] / float(rect[1][1])
         # a square will have an aspect ratio that is approximately
         # equal to one, otherwise, the shape is a rectangle
-        shape = "cube" if ar >= 0.999 and ar <= 1.001 else "rectangle"
+        shape = "square" if ar >= 0.999 and ar <= 1.001 else "rectangle"
 
     # if the shape is a pentagon, it will have 5 vertices
     elif len(approx) == 5:
@@ -490,7 +515,7 @@ def valid_contours(img,type,ratio):
                 area = cv2.contourArea(c)
                 #Rescaling based on input from user
                 area = area * ratio
-                #getting minimun area rectangle that is enclosing the contour
+                #getting minimum area rectangle that is enclosing the contour
                 rect = cv2.minAreaRect(c)
                 #Ignoring small areas
                 if(area <= 4*ratio):
@@ -498,13 +523,13 @@ def valid_contours(img,type,ratio):
                 # calculate coordinates of the minimum area rectangle
                 box = cv2.boxPoints(rect)
                 #Rescaling based on input from user
-                rectLength = rect[1][0] * ratio
-                rectBreadth = rect[1][1] * ratio
+                rectLength = round_up(rect[1][0] * ratio)
+                rectBreadth = round_up(rect[1][1] * ratio)
 
                 #it's a horizontal rectangle which encloses the contour
                 x,y,w,h = cv2.boundingRect(c)
-                w = w * ratio
-                h = h * ratio
+                w = round_up(w * ratio)
+                h = round_up(h * ratio)
                 #Making largest contour's center has reference for translation of other shape
                 if(len(objects)==0):
                     pos = [cX,cY]
@@ -520,7 +545,7 @@ def valid_contours(img,type,ratio):
                 # To store the shape and its details
                 part = []
 
-                if(shape == "cube"):
+                if(shape == "square"):
                     #Adding shape
                     part.append(node(shape="cube",l=rectLength,b=rectLength,h=rectLength))
                     #Giving rotatation
@@ -544,16 +569,30 @@ def valid_contours(img,type,ratio):
                     #Adding to the list of shape in parent child manner
                     add_part(objects,part,pos,type,ratio)
                 elif(shape == "rectangle"):
-                    part.append(node(shape="cube",l=rectLength,b=rectLength,h=rectBreadth))
                     if(type == "front"):
-                        part[0].rotate(0,rect[2],0)
+                        if(rect[2]==-90):
+                            part.append(node(shape="cube",l=rectBreadth,b=rectBreadth,h=rectLength))
+                            part[0].rotate(0,0,0)
+                        else:
+                            part.append(node(shape="cube",l=rectLength,b=rectLength,h=rectBreadth))
+                            part[0].rotate(0,rect[2],0)
                     elif(type == "side"):
-                        part[0].rotate(0,rect[2],90)
+                        if(rect[2]==-90):
+                            part.append(node(shape="cube",l=rectBreadth,b=rectBreadth,h=rectLength))
+                            part[0].rotate(0,0,90)
+                        else:
+                            part.append(node(shape="cube",l=rectLength,b=rectLength,h=rectBreadth))
+                            part[0].rotate(0,rect[2],90)
                     #If there is no rotation in top view rotate 90 along in both x and z axis 
+                    elif(rect[2]==-90):
+                        part.append(node(shape="cube",l=rectBreadth,b=rectBreadth,h=rectLength))
+                        part[0].rotate(90,0,90)
                     elif(rect[2]==0):
+                        part.append(node(shape="cube",l=rectLength,b=rectLength,h=rectBreadth))
                         part[0].rotate(90,0,90)
                     else:
                         #If there is some rotation, rotate in z axis
+                        part.append(node(shape="cube",l=rectLength,b=rectLength,h=rectBreadth))
                         part[0].rotate(90,0,rect[2])
 
                     part.append(tuple([cX,cY]))
@@ -565,7 +604,9 @@ def valid_contours(img,type,ratio):
                 elif(cylinder_type > 0):
                     #Cylinder
                     if(shape == "circle"):
-                        part.append(node(shape="cylinder",r = rectLength/2,r1 = rectLength/2,h=rectLength))
+                        _,radius = cv2.minEnclosingCircle(c)
+                        radius = round_up(radius * ratio)
+                        part.append(node(shape="cylinder",r = radius,r1 = radius,h=rectLength))
                         if(type == "front"):
                             part[0].rotate(90,0,0)
                         elif(type == "side"):
@@ -577,13 +618,15 @@ def valid_contours(img,type,ratio):
                         add_part(objects,part,pos,type,ratio)
                     else:
                         #Regular prism
-                        (x,y),radius = cv2.minEnclosingCircle(c)
-                        radius = radius * ratio
+                        _,radius = cv2.minEnclosingCircle(c)
+                        radius = round_up(radius * ratio)
                         part.append(node(shape="cylinder",r = radius,r1 = radius,h=rectLength,fn = cylinder_type))
                         if(type == "front"):
                             part[0].rotate(90,-90 - rect[2],0)
                         elif(type == "side"):
                             part[0].rotate(0,90,0)
+                        else:
+                            part[0].rotate(0,0,rect[2])
                         part.append(tuple([cX,cY]))
                         part.append(c)
                         part.append(h)

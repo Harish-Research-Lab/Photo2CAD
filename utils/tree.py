@@ -1,5 +1,4 @@
 from .shape import node
-import sys
 
 def writetofile(filename,string):
     file = open(filename,"a")
@@ -10,6 +9,7 @@ def createtree(nodes, filename):
     if(len(nodes)==0):
         print("No shapes detected")
         return
+
     subtree = []
     string = ''
     #Initialize empty node
@@ -40,7 +40,7 @@ def createtree(nodes, filename):
             else:
                 #If right is not free, create a new node and make the present node as left child to the new node
                 temp = present
-                present =node()
+                present = node()
                 present.left = temp
                 present.string = temp.string
                 #Then make the object as right child of the new node
