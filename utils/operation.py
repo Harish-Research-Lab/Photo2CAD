@@ -531,6 +531,7 @@ def valid_contours(img,type,ratio):
                 w = round_up(w * ratio)
                 h = round_up(h * ratio)
                 #Making largest contour's center has reference for translation of other shape
+                pos = [0, 0]
                 if(len(objects)==0):
                     pos = [cX,cY]
                 
