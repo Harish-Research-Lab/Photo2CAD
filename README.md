@@ -66,7 +66,8 @@ openscad -o stl_filename(to format)  scad_filename(from format)
 
 To generate the point cloud for the generated scad file, first we convert to stl format using openscad and use open3d library function
 
-```
+```python
+#stl_filename is the stl location
 mesh = o3d.io.read_triangle_mesh(stl_filename)
 pointcloud = mesh.sample_points_poisson_disk(100000)
 o3d.io.write_point_cloud(pcd_filename, pointcloud)
@@ -77,30 +78,24 @@ The full process in done in the main.py file for your reference using the few te
 
 ```python
 # Dimensioning
+
+#front_image, side_image, top_image are the paths to those views
 d1 = Dimensioning(userId, "front", front_image)
 d2 = Dimensioning(userId, "side", side_image)
 d3 = Dimensioning(userId, "top", top_image)
 if(d1 == None or d2 == None or d3 == None):
     exit(0)
 
-# front view length of highlighted line
+# Here 2 is the length of the highlighted line in front view
 fratio = float(d1["ratio"]) * 2
 # side view length of highlighted line
 sratio = float(d2["ratio"]) * 2
 # top view length of highlighted line
 tratio = float(d3["ratio"]) * 2
 
-# Convert to scad
+# Convert to scad, which gives the output in the static folder
 print(Convert(userId, front_image, side_image, top_image, fratio, sratio, tratio))
 
-
-if(os.path.isfile(scad_filename)):
-    run("openscad -o " + stl_filename + " " + scad_filename)
-
-    if(os.path.isfile(stl_filename)):
-        mesh = o3d.io.read_triangle_mesh(stl_filename)
-        pointcloud = mesh.sample_points_poisson_disk(100000)
-        o3d.io.write_point_cloud(pcd_filename, pointcloud)
 ```
 
 ### Run using the Notebook
