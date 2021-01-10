@@ -16,11 +16,12 @@ d2 = Dimensioning(userId, "side", side_image)
 d3 = Dimensioning(userId, "top", top_image)
 if(d1 == None or d2 == None or d3 == None):
     exit(0)
-# Width of rectangle in highlighted in front view
+
+# front view length of highlighted line
 fratio = float(d1["ratio"]) * 2
-# Width of rectangle in highlighted in front view
+# side view length of highlighted line
 sratio = float(d2["ratio"]) * 2
-# Width of rectangle in highlighted in front view
+# top view length of highlighted line
 tratio = float(d3["ratio"]) * 2
 
 print(Convert(userId, front_image, side_image, top_image, fratio, sratio, tratio))
