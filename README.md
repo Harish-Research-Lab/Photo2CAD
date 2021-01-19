@@ -1,5 +1,15 @@
 # ACADGen
 
+## Copyright
+
+Copyright (c) 2017-2021: Ajay B Harish and Abhishek Rajendra
+
+## Cite us
+
+How to cite us: A. B. Harish and A. R. Prasad, "Automated 3D solid reconstruction from 2D CAD using OpenCV," arXiv:2101.04248 (2021)
+
+## About ACAD-Gen
+
 Automated CAD model generator given 3 views of the model, namely front, side and top view to SCAD format. Further the SCAD file is used to generate stl and pcd format.
 
 ## Pre-Requisites
