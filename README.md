@@ -1,8 +1,8 @@
-# ACADGen
+# Photo2CAD
 
 ## Copyright
 
-Copyright (c) 2017-2021: Ajay B Harish and Abhishek Rajendra
+Copyright (c) 2017-2021: Ajay Research Lab
 
 ## Cite us
 
